@@ -42,7 +42,7 @@ public class FinancialForecasting {
         int years = 10;
 
         System.out.println("Initial Amount: " + principal);
-        System.out.println("Annual Growth Rate: " + rate + "%");
+        System.out.println("Annual Growth Rate: " + rate);
         System.out.println("Number of Years: " + years);
 
         // Calculate the future value using the separate function

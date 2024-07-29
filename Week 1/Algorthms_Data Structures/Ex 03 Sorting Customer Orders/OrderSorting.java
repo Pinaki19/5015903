@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+// the sorting is done in non-descending order, so highest value order is at the end
+
 class Order {
     int orderId;
     String customerName;

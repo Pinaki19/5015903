@@ -23,8 +23,29 @@ public class FinancialForecasting {
     }
 
     // Separate function to calculate future value
-    public static double calculateFutureValueMemoized(double principal, double rate, int years) {
+    public static double calculatefutureValueLogn(double principal, double rate, int years) {
         double multiplier = calculateMultiplierMemoized(rate, years);
+        return principal * multiplier;
+    }
+
+    // Recursive function to calculate (1 + rate)^years in O(log n) time
+    public static double calculateMultiplierLogN(double rate, int years) {
+        if (years == 0) {
+            return 1.0;
+        }
+        
+        double half = calculateMultiplierLogN(rate, years / 2);
+        
+        if (years % 2 == 0) {
+            return half * half;
+        } else {
+            return (1 + rate) * half * half;
+        }
+    }
+
+    // Separate function to calculate future value
+    public static double calculateFutureValueLogN(double principal, double rate, int years) {
+        double multiplier = calculateMultiplierLogN(rate, years);
         return principal * multiplier;
     }
 
@@ -34,6 +55,7 @@ public class FinancialForecasting {
         }
         return calculateFutureValue(principal*(1+rate),rate,years-1);
     }
+
 
     public static void main(String[] args) {
         // Hardcoded test values
@@ -47,8 +69,11 @@ public class FinancialForecasting {
 
         // Calculate the future value using the separate function
         double futureValueRecursive = calculateFutureValue(principal, rate, years);
-        double futureValueMemoized = calculateFutureValueMemoized(principal, rate, years);
-        System.out.printf("Future Value for %.2f is: %.2f with Recursion, %.2f with Memoization",principal, futureValueRecursive,futureValueMemoized);
+        double futureValueLogn = calculateFutureValueLogN(principal, rate, years);
+       
+        System.out.printf("Future Value for %.2f is: \nlinear Recursion: %.2f%nExponential squaring: %.2f%n",principal, futureValueRecursive,futureValueLogn);
         System.out.println();
     }
 }
+
+ 

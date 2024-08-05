@@ -3,3 +3,5 @@
 test*
 Test*
 /.metadata/
+.vscode*
+*.json

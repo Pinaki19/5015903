@@ -1,0 +1,109 @@
+-- Exercise 5: Triggers
+
+/*
+SCENARIO 1: Automatically update the last modified date when a customer's record is updated.
+
+Question: Write a trigger UpdateCustomerLastModified that updates the LastModified column 
+of the Customers table to the current date whenever a customer's record is updated.
+
+*/
+
+
+SELECT * FROM CUSTOMERS;
+
+SET SERVEROUTPUT ON;
+CREATE OR REPLACE TRIGGER UPDATECUSTOMERLASTMODIFIED
+BEFORE UPDATE ON CUSTOMERS
+FOR EACH ROW
+BEGIN
+    :NEW.LASTMODIFIED := SYSDATE;
+    DBMS_OUTPUT.PUT_LINE('LAST MODIFIED UPDATED');
+END UPDATECUSTOMERLASTMODIFIED;
+/
+
+UPDATE CUSTOMERS SET NAME = 'JOHN DOE' WHERE CUSTOMERID = 1;
+
+
+/*
+SCENARIO 2: Maintain an audit log for all transactions.
+
+Question: Write a trigger LogTransaction that inserts a record into an AuditLog 
+table whenever a transaction is inserted into the Transactions table.
+
+*/
+
+CREATE TABLE AUDITLOG (
+    LOGID           NUMBER PRIMARY KEY,
+    TRANSACTIONID   NUMBER,
+    ACCOUNTID       NUMBER,
+    TRANSACTIONDATE DATE,
+    AMOUNT          NUMBER,
+    TRANSACTIONTYPE VARCHAR2(10),
+    LOGTIMESTAMP    DATE DEFAULT SYSDATE
+);
+
+SELECT * FROM TRANSACTIONS;
+
+CREATE SEQUENCE AUDITLOG_SEQ 
+START WITH 1 
+INCREMENT BY 1;
+
+SET SERVEROUTPUT ON;
+CREATE OR REPLACE TRIGGER LOGTRANSACTIONS
+AFTER INSERT ON TRANSACTIONS
+FOR EACH ROW
+BEGIN
+    INSERT INTO AUDITLOG (LOGID, TRANSACTIONID, ACCOUNTID, TRANSACTIONDATE, AMOUNT, TRANSACTIONTYPE)
+    VALUES (AUDITLOG_SEQ.NEXTVAL, :NEW.TRANSACTIONID, :NEW.ACCOUNTID, SYSDATE, :NEW.AMOUNT, :NEW.TRANSACTIONTYPE);
+    DBMS_OUTPUT.PUT_LINE('INSERT SUCCESSFUL');
+END LOGTRANSACTIONS;
+/
+
+INSERT INTO TRANSACTIONS (TRANSACTIONID, ACCOUNTID, TRANSACTIONDATE, AMOUNT, TRANSACTIONTYPE)
+VALUES (6, 2, SYSDATE, 600, 'Deposit');
+
+SELECT * FROM AUDITLOG;
+SELECT * FROM TRANSACTIONS;
+
+
+/*
+SCENARIO 3: Enforce business rules on deposits and withdrawals.
+
+Question: Write a trigger CheckTransactionRules that ensures withdrawals do not exceed
+the balance and deposits are positive before inserting a record into the Transactions table.
+
+*/
+
+SET SERVEROUTPUT ON;
+CREATE OR REPLACE TRIGGER CHECKTRANSACTIONRULES
+BEFORE INSERT ON TRANSACTIONS
+FOR EACH ROW
+DECLARE
+    V_BALANCE ACCOUNTS.BALANCE%TYPE;
+BEGIN
+    -- Get the current balance of the account
+    SELECT BALANCE INTO V_BALANCE
+    FROM ACCOUNTS
+    WHERE ACCOUNTID = :NEW.ACCOUNTID
+    FOR UPDATE;
+
+    -- Check the transaction type and validate accordingly
+    IF :NEW.TRANSACTIONTYPE = 'Withdrawal' THEN
+        IF :NEW.AMOUNT > V_BALANCE THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Insufficient balance for the withdrawal.');
+        END IF;
+    ELSIF :NEW.TRANSACTIONTYPE = 'Deposit' THEN
+        IF :NEW.AMOUNT <= 0 THEN
+            RAISE_APPLICATION_ERROR(-20002, 'Deposit amount must be positive.');
+        END IF;
+    ELSE
+        RAISE_APPLICATION_ERROR(-20003, 'Invalid transaction type.');
+    END IF;
+END CHECKTRANSACTIONRULES;
+/
+
+SELECT * FROM ACCOUNTS;
+SELECT * FROM CUSTOMERS;
+
+INSERT INTO ACCOUNTS (ACCOUNTID, CUSTOMERID, ACCOUNTTYPE, BALANCE, LASTMODIFIED)
+VALUES (4, 1, 'Recurring', 3500, SYSDATE);
